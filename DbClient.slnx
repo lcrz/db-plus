@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DbClient.Core/DbClient.Core.csproj" />
+  <Project Path="DbClient.Plugins.MySql/DbClient.Plugins.MySql.csproj" />
+  <Project Path="DbClient.Wpf/DbClient.Wpf.csproj" />
+</Solution>

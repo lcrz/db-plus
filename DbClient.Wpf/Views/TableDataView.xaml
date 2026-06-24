@@ -1,0 +1,351 @@
+<UserControl x:Class="DbClient.Wpf.Views.TableDataView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:DbClient.Wpf.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1000">
+    
+    <Grid Background="{StaticResource ContentBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <!-- Panel de Filtros -->
+            <RowDefinition Height="Auto"/>
+            <!-- Separador -->
+            <RowDefinition Height="Auto"/>
+            <!-- DataGrid Principal -->
+            <RowDefinition Height="*"/>
+            <!-- Barra de Estado e Inserción/Borrado -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Sección de Filtros -->
+        <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Lista de filas de filtros -->
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" MaxHeight="140" Margin="0,0,15,0">
+                    <ItemsControl ItemsSource="{Binding Filters}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TableFilterRow}">
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                                    <!-- Operador Lógico (AND/OR) -->
+                                    <ComboBox ItemsSource="{Binding DataContext.AvailableLogicalOperators, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              SelectedItem="{Binding LogicOperator}"
+                                              Width="70"
+                                              Margin="0,0,8,0">
+                                        <ComboBox.Style>
+                                            <Style TargetType="ComboBox" BasedOn="{StaticResource ModernComboBox}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLogicOperatorVisible}" Value="False">
+                                                        <Setter Property="Visibility" Value="Hidden"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.Style>
+                                    </ComboBox>
+
+                                    <!-- Campo/Columna a Filtrar -->
+                                    <ComboBox ItemsSource="{Binding DataContext.AvailableColumns, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              SelectedItem="{Binding ColumnName}"
+                                              Style="{StaticResource ModernComboBox}"
+                                              Width="160"
+                                              Margin="0,0,8,0"/>
+
+                                    <!-- Comparador / Operador -->
+                                    <ComboBox ItemsSource="{Binding DataContext.AvailableOperators, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              SelectedItem="{Binding Operator}"
+                                              Style="{StaticResource ModernComboBox}"
+                                              Width="160"
+                                              Margin="0,0,8,0"/>
+
+                                    <!-- Valor del Filtro -->
+                                    <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                             Width="240"
+                                             Margin="0,0,8,0">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" 
+                                                        Command="{Binding DataContext.ApplyFilterOnEnterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                        </TextBox.InputBindings>
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox" BasedOn="{StaticResource ModernTextBox}">
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Operator}" Value="is null">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Text" Value=""/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Operator}" Value="is not null">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Text" Value=""/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+
+                                    <!-- Botón Eliminar Filtro -->
+                                    <Button Content="➖" 
+                                            Command="{Binding DataContext.RemoveFilterRowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource DangerButton}"
+                                            Width="32" Height="32"
+                                            Padding="0"
+                                            FontSize="10"
+                                            ToolTip="Quitar Filtro"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Content="➕ Agregar" 
+                            Command="{Binding AddFilterRowCommand}" 
+                            Style="{StaticResource ModernButton}" 
+                            Height="32" 
+                            Margin="0,0,8,0" 
+                            Padding="12,5"/>
+                    <Button Content="🔍 Buscar" 
+                            Command="{Binding ApplyFiltersCommand}" 
+                            Style="{StaticResource AccentButton}" 
+                            Height="32" 
+                            Margin="0,0,8,0"
+                            Padding="15,5"/>
+                    <Button Content="🔄 Refrescar" 
+                            Command="{Binding LoadDataCommand}" 
+                            Style="{StaticResource ModernButton}" 
+                            Height="32" 
+                            Padding="12,5"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Separador -->
+        <Border Grid.Row="1" Background="#222222" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="Datos de la Tabla: " Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TableName}" Foreground="{StaticResource AccentLightBrush}" FontWeight="Bold"/>
+                    <TextBlock Text=" (Doble clic en celda para editar)" Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="10,0,0,0" VerticalAlignment="Center" FontStyle="Italic"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Grid Principal de Datos + Panel de JSON Detalles -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <!-- Grid de Datos -->
+                <ColumnDefinition Width="*" MinWidth="300"/>
+                <!-- Splitter -->
+                <ColumnDefinition Width="4"/>
+                <!-- Panel de Detalles JSON -->
+                <ColumnDefinition Width="360" MinWidth="200" MaxWidth="600"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- DataGrid Principal -->
+            <DataGrid x:Name="myDataGrid"
+                      Grid.Column="0" 
+                      SelectedItem="{Binding SelectedRow}"
+                      Style="{StaticResource ModernDataGrid}"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="False"
+                      SelectionMode="Extended"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      BorderThickness="0"
+                      AutoGeneratingColumn="DataGrid_AutoGeneratingColumn">
+                
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Copiar como SQL" 
+                                  Command="{Binding CopyAsSqlCommand}" 
+                                  CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <MenuItem Header="Copiar como Json" 
+                                  Command="{Binding CopyAsJsonCommand}" 
+                                  CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                        <MenuItem Header="Copiar como CSV" 
+                                  Command="{Binding CopyAsCsvCommand}" 
+                                  CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <!-- Pincel dorado para celda seleccionada / enfocada en el editor -->
+                <DataGrid.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3E3E42"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#E5E5E5"/>
+                </DataGrid.Resources>
+            </DataGrid>
+
+            <!-- Separador Vertical -->
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource BorderBrush}"/>
+
+            <!-- Panel de Detalles JSON -->
+            <Grid Grid.Column="2" Background="#161616" Margin="0">
+                <Grid.RowDefinitions>
+                    <!-- Filtro TextBox -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- TreeView de JSON -->
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid.Resources>
+                    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+                </Grid.Resources>
+
+                <!-- Campo de Filtrado de Propiedades -->
+                <Border Grid.Row="0" Background="#1E1E1E" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10">
+                    <StackPanel>
+                        <TextBlock Text="Filtrar Propiedades" Style="{StaticResource ModernLabel}" Margin="0,0,0,3"/>
+                        <TextBox Text="{Binding JsonFilterText, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ModernTextBox}"
+                                 Padding="8,6"
+                                 Height="32"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- TreeView de Detalles JSON -->
+                <TreeView Grid.Row="1" 
+                          ItemsSource="{Binding JsonNodes}" 
+                          Style="{StaticResource ModernTreeView}" 
+                          BorderThickness="0" 
+                          Padding="10"
+                          KeyDown="TreeView_KeyDown">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Style.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#2D2D30"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#E5E5E5"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1F1F1F"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#E5E5E5"/>
+                            </Style.Resources>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.Resources>
+                        <HierarchicalDataTemplate DataType="{x:Type vm:JsonNodeViewModel}" ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal" Margin="2,1" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu Style="{StaticResource ModernContextMenu}">
+                                        <MenuItem Header="Copiar solo key" 
+                                                  Command="{Binding PlacementTarget.Tag.CopyNodeKeyCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Copiar key + valor (JSON)" 
+                                                  Command="{Binding PlacementTarget.Tag.CopyNodeKeyAndValueCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                        <MenuItem Header="Copiar key + sub-nodos (JSON)" 
+                                                  Command="{Binding PlacementTarget.Tag.CopyNodeKeyAndSubtreeCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <!-- Icono indicador -->
+                                <TextBlock x:Name="IconText" Text="📄" Margin="0,0,6,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                
+                                <!-- Clave del Campo -->
+                                <TextBlock Text="{Binding Key}" FontWeight="SemiBold" Foreground="#4D9CE4" VerticalAlignment="Center"/>
+                                
+                                <!-- Separador -->
+                                <TextBlock x:Name="SeparatorText" Text=": " Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                
+                                <!-- Valor del Campo (No Editable) -->
+                                <TextBlock x:Name="ValueText" Text="{Binding Value}" Foreground="#2ECC71" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="250" Visibility="Visible"/>
+
+                                <!-- Valor del Campo (Editable) -->
+                                <TextBox x:Name="ValueEdit" 
+                                         Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" 
+                                         Foreground="#2ECC71" 
+                                         Background="#1F1F1F" 
+                                         BorderBrush="#333333" 
+                                         BorderThickness="1" 
+                                         Padding="4,2" 
+                                         Margin="2,0" 
+                                         VerticalAlignment="Center" 
+                                         TextWrapping="Wrap" 
+                                         MaxWidth="250" 
+                                         CaretBrush="#2ECC71"
+                                         Visibility="Collapsed"/>
+                            </StackPanel>
+                            <HierarchicalDataTemplate.Triggers>
+                                <!-- Si es un objeto (tiene hijos), ocultamos el valor y cambiamos el icono -->
+                                <DataTrigger Binding="{Binding IsObject}" Value="True">
+                                    <Setter TargetName="IconText" Property="Text" Value="🔸"/>
+                                    <Setter TargetName="IconText" Property="Foreground" Value="#9B5DE5"/>
+                                    <Setter TargetName="SeparatorText" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="ValueEdit" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <!-- Si es editable, ocultamos el TextBlock y mostramos el TextBox -->
+                                <DataTrigger Binding="{Binding IsEditable}" Value="True">
+                                    <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="ValueEdit" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <!-- Si el valor es nulo, lo mostramos estilizado -->
+                                <DataTrigger Binding="{Binding Value}" Value="{x:Null}">
+                                    <Setter TargetName="ValueText" Property="Text" Value="null"/>
+                                    <Setter TargetName="ValueText" Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                                    <Setter TargetName="ValueText" Property="FontStyle" Value="Italic"/>
+                                </DataTrigger>
+                            </HierarchicalDataTemplate.Triggers>
+                        </HierarchicalDataTemplate>
+                    </TreeView.Resources>
+                </TreeView>
+            </Grid>
+        </Grid>
+
+        <!-- Barra inferior: Acciones CRUD y Estado -->
+        <Border Grid.Row="3" Background="#1E1E1E" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Estado del Visor -->
+                <TextBlock Grid.Column="0" 
+                           Text="{Binding StatusMessage}" 
+                           Foreground="{StaticResource TextMutedBrush}" 
+                           VerticalAlignment="Center" 
+                           FontWeight="SemiBold"/>
+
+                <!-- Botones CRUD / Guardar -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="➕ Agregar Fila" 
+                            Command="{Binding InsertRowCommand}" 
+                            Style="{StaticResource ModernButton}" 
+                            Margin="0,0,8,0" 
+                            Padding="12,6"/>
+                    <Button Content="➖ Eliminar Fila" 
+                            Command="{Binding DeleteRowCommand}" 
+                            Style="{StaticResource DangerButton}" 
+                            Margin="0,0,8,0" 
+                            Padding="12,6"/>
+                    <Button Content="💾 Guardar Cambios" 
+                            Command="{Binding SaveChangesCommand}" 
+                            Style="{StaticResource ModernButton}" 
+                            BorderBrush="{StaticResource SuccessBrush}" 
+                            Foreground="{StaticResource SuccessBrush}" 
+                            Margin="0,0,8,0" 
+                            Padding="12,6"/>
+                    <Button Content="❌ Cerrar Visor" 
+                            Command="{Binding DataContext.CloseTableDataTabCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                            CommandParameter="{Binding}" 
+                            Style="{StaticResource ModernButton}" 
+                            Padding="12,6"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

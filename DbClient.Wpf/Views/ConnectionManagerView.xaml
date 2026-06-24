@@ -1,0 +1,354 @@
+<UserControl x:Class="DbClient.Wpf.Views.ConnectionManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:DbClient.Wpf.ViewModels"
+             xmlns:models="clr-namespace:DbClient.Wpf.Models"
+             xmlns:views="clr-namespace:DbClient.Wpf.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900">
+    <UserControl.Resources>
+        <!-- DataTemplate para mostrar los perfiles de conexión en el listado lateral -->
+        <DataTemplate DataType="{x:Type models:ConnectionDetails}">
+            <Border Padding="12,10" Margin="0,3" CornerRadius="6" Background="#222222" BorderBrush="#333333" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#E5E5E5" FontSize="13"/>
+                    <TextBlock Text="{Binding Server}" Foreground="#8A8A8A" FontSize="11" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+        
+        <!-- Estilo personalizado para el ListBox lateral de perfiles -->
+        <Style TargetType="ListBox" x:Key="ModernListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,2"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="0" CornerRadius="6">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#333333"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#0078D4"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource BackgroundBrush}">
+        <Grid.ColumnDefinitions>
+            <!-- Panel Lateral (Lista de Perfiles) -->
+            <ColumnDefinition Width="260"/>
+            <!-- Línea Separadora -->
+            <ColumnDefinition Width="1"/>
+            <!-- Área de Detalle / Configuración -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Grid Grid.Column="0" Background="{StaticResource SidebarBackgroundBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15,12">
+                <TextBlock Text="Perfiles Guardados" Style="{StaticResource ModernHeader}" Margin="0"/>
+            </Border>
+
+            <!-- Listbox de Perfiles -->
+            <ListBox Grid.Row="1" MouseDoubleClick="ListBox_MouseDoubleClick" 
+                     ItemsSource="{Binding SavedConnections}" 
+                     SelectedItem="{Binding SelectedConnection}"
+                     Style="{StaticResource ModernListBox}"
+                     Margin="10"/>
+
+            <!-- Botón Crear Nuevo -->
+            <Border Grid.Row="2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="15">
+                <Button Content="+ Nuevo Perfil" 
+                        Command="{Binding ClearFormCommand}" 
+                        Style="{StaticResource ModernButton}" 
+                        HorizontalAlignment="Stretch"
+                        Height="36"/>
+            </Border>
+        </Grid>
+
+        <!-- Border Separator -->
+        <Border Grid.Column="1" Background="{StaticResource BorderBrush}"/>
+
+        <!-- Main Form & Settings Area -->
+        <Grid Grid.Column="2" Background="{StaticResource ContentBackgroundBrush}">
+            <TabControl Style="{StaticResource ModernTabControl}" BorderThickness="0">
+                <!-- Tab de Conexión -->
+                <TabItem Header="Detalles de Conexión" Style="{StaticResource ModernTabItem}">
+                    <ScrollViewer Padding="35,25">
+                        <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                            <TextBlock Text="Configurar Conexión MySQL" Style="{StaticResource ModernHeader}" FontSize="18"/>
+                            <TextBlock Text="Establece los parámetros del servidor para interactuar con la base de datos." Style="{StaticResource ModernLabel}" Margin="0,0,0,20"/>
+
+                            <!-- Perfil -->
+                            <StackPanel Margin="0,0,0,15">
+                                <TextBlock Text="Nombre del Perfil de Conexión" Style="{StaticResource ModernLabel}"/>
+                                <TextBox Text="{Binding ConnectionName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                            </StackPanel>
+
+                            <!-- Host & Puerto -->
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="110"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                                    <TextBlock Text="Servidor / Host" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Puerto" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Usuario y Contraseña -->
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                                    <TextBlock Text="Usuario" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Contraseña" Style="{StaticResource ModernLabel}"/>
+                                    <PasswordBox views:PasswordBoxHelper.BindPassword="True"
+                                                 views:PasswordBoxHelper.BoundPassword="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ModernPasswordBox}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Base de datos inicial -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Text="Base de Datos Inicial (Opcional)" Style="{StaticResource ModernLabel}"/>
+                                <TextBox Text="{Binding DatabaseName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                            </StackPanel>
+
+                            <!-- Feedback Panel -->
+                            <Border Margin="0,0,0,20" Padding="12" CornerRadius="6" BorderThickness="1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Background" Value="#1C2833"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding FeedbackMessage}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding FeedbackMessage}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSuccessFeedback}" Value="True">
+                                                <Setter Property="Background" Value="#1A3324"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSuccessFeedback}" Value="False">
+                                                <Setter Property="Background" Value="#331A1A"/>
+                                                <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding FeedbackMessage}" Foreground="#E5E5E5" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+
+                            <!-- Botones de Acción -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Button Grid.Column="0" Content="Probar Conexión" Command="{Binding TestConnectionCommand}" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Height="34"/>
+                                <Button Grid.Column="1" Content="Guardar Perfil" Command="{Binding SaveConnectionCommand}" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Height="34"/>
+                                <Button Grid.Column="2" Content="Eliminar" Command="{Binding DeleteConnectionCommand}" Style="{StaticResource ModernButton}" HorizontalAlignment="Left" Foreground="{StaticResource ErrorBrush}" Height="34"/>
+                                <Button Grid.Column="3" Content="Conectar" Command="{Binding ConnectCommand}" Style="{StaticResource AccentButton}" Width="110" Height="36"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- Tab de Configuración -->
+                <TabItem Header="Ubicación de Datos" Style="{StaticResource ModernTabItem}">
+                    <ScrollViewer Padding="35,25">
+                        <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                            <TextBlock Text="Configuración de Almacenamiento" Style="{StaticResource ModernHeader}" FontSize="18"/>
+                            <TextBlock Text="Configura la carpeta local donde se ubicarán tus perfiles encriptados." Style="{StaticResource ModernLabel}" Margin="0,0,0,20"/>
+
+                            <!-- Ruta Carpeta -->
+                            <StackPanel Margin="0,0,0,15">
+                                <TextBlock Text="Carpeta de Destino" Style="{StaticResource ModernLabel}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding StorageFolderPath, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="Buscar..." Command="{Binding BrowseFolderCommand}" Style="{StaticResource ModernButton}" Padding="12,6" Height="30" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <Button Content="Guardar Ubicación" Command="{Binding SaveSettingsCommand}" Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Width="150" Height="34" Margin="0,10,0,25"/>
+
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Seguridad del Almacenamiento (DPAPI)" FontWeight="Bold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Todas tus contraseñas y detalles de conexión se codifican mediante la API de Protección de Datos de Windows (DPAPI) a nivel de usuario local. Esto significa que solo tu usuario de Windows puede leer y descifrar el archivo connections.json, manteniéndolo seguro de otras cuentas locales o accesos directos al disco."
+                                               TextWrapping="Wrap" LineHeight="18" Foreground="{StaticResource TextMutedBrush}" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- Tab de Configuración de IA (Ollama) -->
+                <TabItem Header="Configuración de IA" Style="{StaticResource ModernTabItem}">
+                    <ScrollViewer Padding="35,25">
+                        <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                            <TextBlock Text="Configuración de Inteligencia Artificial" Style="{StaticResource ModernHeader}" FontSize="18"/>
+                            <TextBlock Text="Configura el proveedor y los parámetros de IA para la generación de SQL." Style="{StaticResource ModernLabel}" Margin="0,0,0,20"/>
+
+                            <!-- Proveedor de IA -->
+                            <StackPanel Margin="0,0,0,15">
+                                <TextBlock Text="Proveedor de IA" Style="{StaticResource ModernLabel}"/>
+                                <ComboBox SelectedValue="{Binding AiProvider, UpdateSourceTrigger=PropertyChanged}" 
+                                          SelectedValuePath="Content" 
+                                          Style="{StaticResource ModernComboBox}">
+                                    <ComboBoxItem Content="Ollama"/>
+                                    <ComboBoxItem Content="AntigravityCli"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- Panel para Ollama -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AiProvider}" Value="Ollama">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <!-- Endpoint URL -->
+                                <StackPanel Margin="0,0,0,15">
+                                    <TextBlock Text="URL del Endpoint de Ollama" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding OllamaEndpointUrl, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+
+                                <!-- Model Name -->
+                                <StackPanel Margin="0,0,0,15">
+                                    <TextBlock Text="Nombre del Modelo (Ej. llama3, qwen2.5-coder:7b)" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding OllamaModelName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Panel para Antigravity CLI -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AiProvider}" Value="AntigravityCli">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <!-- Ruta del Ejecutable de Antigravity CLI -->
+                                <StackPanel Margin="0,0,0,15">
+                                    <TextBlock Text="Ruta del ejecutable Antigravity CLI (agy.exe)" Style="{StaticResource ModernLabel}"/>
+                                    <TextBox Text="{Binding AntigravityCliPath, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- System Prompt -->
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Text="System Prompt (Instrucciones del Sistema)" Style="{StaticResource ModernLabel}"/>
+                                <TextBox Text="{Binding OllamaSystemPrompt, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Height="120" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,25">
+                                <Button Content="Guardar Configuración IA" Command="{Binding SaveAiSettingsCommand}" Style="{StaticResource AccentButton}" Width="200" Height="34" Margin="0,0,10,0"/>
+                                <Button Content="Restablecer Prompt" Command="{Binding ResetAiPromptCommand}" Style="{StaticResource ModernButton}" Width="150" Height="34"/>
+                            </StackPanel>
+
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Requisitos de Ollama" FontWeight="Bold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Asegúrate de que Ollama esté instalado y ejecutándose en la dirección y puerto especificados. Puedes descargar y ejecutar modelos usando el comando 'ollama run &lt;modelo&gt;' en tu terminal."
+                                               TextWrapping="Wrap" LineHeight="18" Foreground="{StaticResource TextMutedBrush}" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- Tab de Opciones Generales -->
+                <TabItem Header="Opciones" Style="{StaticResource ModernTabItem}">
+                    <ScrollViewer Padding="35,25">
+                        <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                            <TextBlock Text="Opciones de la Aplicación" Style="{StaticResource ModernHeader}" FontSize="18"/>
+                            <TextBlock Text="Personaliza el comportamiento y las opciones de copiado del cliente." Style="{StaticResource ModernLabel}" Margin="0,0,0,20"/>
+
+                            <!-- Opciones de Copiado -->
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Text="Opciones de Copiado (Ctrl+C)" Style="{StaticResource ModernLabel}" Margin="0,0,0,5"/>
+                                <ComboBox ItemsSource="{Binding AvailableCopyModes}"
+                                          SelectedValue="{Binding SelectedJsonCopyMode}"
+                                          SelectedValuePath="Mode"
+                                          DisplayMemberPath="DisplayName"
+                                          Style="{StaticResource ModernComboBox}"
+                                          Height="34"/>
+                            </StackPanel>
+
+                            <Button Content="Guardar Opciones" 
+                                    Command="{Binding SaveOptionsCommand}" 
+                                    Style="{StaticResource AccentButton}" 
+                                    HorizontalAlignment="Left" 
+                                    Width="160" Height="34" 
+                                    Margin="0,10,0,25"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SyntaxDefinition name="SQL-Dark" extensions=".sql" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Keyword" foreground="#4D9CE4" fontWeight="bold" />
+  <Color name="Function" foreground="#C586C0" fontWeight="bold" />
+  <Color name="String" foreground="#D69D85" />
+  <Color name="Comment" foreground="#6A9955" fontStyle="italic" />
+  <Color name="Number" foreground="#B5CEA8" />
+  <Color name="Identifier" foreground="#E5E5E5" />
+
+  <RuleSet ignoreCase="true">
+    <!-- Comments -->
+    <Span color="Comment" begin="--" end="\n" />
+    <Span color="Comment" multiline="true" begin="/\*" end="\*/" />
+
+    <!-- Strings -->
+    <Span color="String">
+      <Begin>'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <Span color="String">
+      <Begin>"</Begin>
+      <End>"</End>
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <!-- Keywords -->
+    <Keywords color="Keyword">
+      <Word>SELECT</Word>
+      <Word>FROM</Word>
+      <Word>WHERE</Word>
+      <Word>INSERT</Word>
+      <Word>INTO</Word>
+      <Word>UPDATE</Word>
+      <Word>DELETE</Word>
+      <Word>JOIN</Word>
+      <Word>LEFT</Word>
+      <Word>RIGHT</Word>
+      <Word>INNER</Word>
+      <Word>ON</Word>
+      <Word>GROUP</Word>
+      <Word>ORDER</Word>
+      <Word>BY</Word>
+      <Word>HAVING</Word>
+      <Word>LIMIT</Word>
+      <Word>AND</Word>
+      <Word>OR</Word>
+      <Word>NOT</Word>
+      <Word>AS</Word>
+      <Word>CREATE</Word>
+      <Word>TABLE</Word>
+      <Word>DROP</Word>
+      <Word>ALTER</Word>
+      <Word>SET</Word>
+      <Word>NULL</Word>
+      <Word>IS</Word>
+      <Word>DISTINCT</Word>
+      <Word>BETWEEN</Word>
+      <Word>IN</Word>
+      <Word>LIKE</Word>
+      <Word>EXISTS</Word>
+      <Word>ANY</Word>
+      <Word>ALL</Word>
+      <Word>UNION</Word>
+      <Word>EXCEPT</Word>
+      <Word>INTERSECT</Word>
+    </Keywords>
+
+    <!-- Functions -->
+    <Keywords color="Function">
+      <Word>COUNT</Word>
+      <Word>SUM</Word>
+      <Word>AVG</Word>
+      <Word>MIN</Word>
+      <Word>MAX</Word>
+      <Word>UPPER</Word>
+      <Word>LOWER</Word>
+      <Word>LENGTH</Word>
+      <Word>SUBSTRING</Word>
+      <Word>TRIM</Word>
+      <Word>REPLACE</Word>
+      <Word>ABS</Word>
+      <Word>COALESCE</Word>
+    </Keywords>
+
+    <!-- Numbers -->
+    <Rule color="Number">
+      \b0[xX][0-9a-fA-F]+|(\b\d+(\.[0-9]+)?|\.[0-9]+)([eE][+-]?[0-9]+)?
+    </Rule>
+  </RuleSet>
+</SyntaxDefinition>

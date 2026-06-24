@@ -1,0 +1,39 @@
+<Window x:Class="DbClient.Wpf.Views.SqlPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        mc:Ignorable="d"
+        Title="Código SQL (CREATE TABLE)" Height="450" Width="650"
+        Background="#1E1E1E" Foreground="#E5E5E5"
+        Style="{StaticResource ModernWindow}"
+        Icon="/Resources/app_icon.png"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <!-- Visor SQL -->
+            <RowDefinition Height="*"/>
+            <!-- Botones -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- AvalonEdit editor de solo lectura para el código DDL -->
+        <avalonedit:TextEditor Name="sqlEditor"
+                               Grid.Row="0"
+                               IsReadOnly="True"
+                               ShowLineNumbers="True"
+                               FontFamily="Consolas, Courier New, monospace"
+                               FontSize="13"
+                               Background="#151515"
+                               Foreground="{StaticResource TextBrush}"
+                               LineNumbersForeground="#555555"
+                               Padding="8"/>
+
+        <!-- Barra inferior de acciones -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Copiar SQL" Click="CopyButton_Click" Style="{StaticResource AccentButton}" Width="110" Height="32" Margin="0,0,10,0"/>
+            <Button Content="Cerrar" Click="CloseButton_Click" Style="{StaticResource ModernButton}" Width="100" Height="32"/>
+        </StackPanel>
+    </Grid>
+</Window>

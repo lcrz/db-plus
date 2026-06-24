@@ -1,0 +1,878 @@
+<Window x:Class="DbClient.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:DbClient.Wpf.ViewModels"
+        xmlns:views="clr-namespace:DbClient.Wpf.Views"
+        mc:Ignorable="d"
+        Title="DB+" Height="720" Width="1100"
+        Style="{StaticResource ModernWindow}"
+        Icon="/Resources/app_icon.png"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.InputBindings>
+        <KeyBinding Key="P" Modifiers="Control" Command="{Binding ShowQuickSearchCommand}"/>
+        <KeyBinding Key="Escape" Command="{Binding CloseQuickSearchCommand}"/>
+    </Window.InputBindings>
+    
+    <Window.Resources>
+        <!-- Estilo para cada pestaña (TabItem) de Datos de Tabla -->
+        <Style x:Key="TableDataTabItemStyle" TargetType="TabItem" BasedOn="{StaticResource ModernTabItem}">
+            <Setter Property="Header" Value="{Binding TableName}"/>
+            <Setter Property="AllowDrop" Value="True"/>
+            <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TabControl}}"/>
+            <Setter Property="ContextMenu">
+                <Setter.Value>
+                    <ContextMenu Style="{StaticResource ModernContextMenu}">
+                        <MenuItem Header="Cerrar pestaña" 
+                                   Command="{Binding PlacementTarget.Tag.CloseTableDataTabCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                   CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                   Style="{StaticResource ModernMenuItem}"/>
+                        <MenuItem Header="Cerrar otras pestañas" 
+                                   Command="{Binding PlacementTarget.Tag.CloseOtherTableDataTabsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                   CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                   Style="{StaticResource ModernMenuItem}"/>
+                        <MenuItem Header="Cerrar pestañas a la derecha" 
+                                   Command="{Binding PlacementTarget.Tag.CloseTableDataTabsToTheRightCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                   CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                   Style="{StaticResource ModernMenuItem}"/>
+                        <Separator Style="{StaticResource ModernMenuSeparator}"/>
+                        <MenuItem Header="Cerrar todas las pestañas" 
+                                   Command="{Binding PlacementTarget.Tag.CloseAllTableDataTabsCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                   Style="{StaticResource ModernMenuItem}"/>
+                    </ContextMenu>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="0,0,1,2" 
+                                CornerRadius="3,3,0,0"
+                                Padding="12,6"
+                                Margin="0,0,2,0"
+                                SnapsToDevicePixels="True">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="📊" Margin="0,0,6,0" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding TableName}" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                                <Button x:Name="closeButton" 
+                                        Content="✕" 
+                                        Command="{Binding Tag.CloseTableDataTabCommand, RelativeSource={RelativeSource AncestorType=TabItem}}" 
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource TabCloseButtonStyle}"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="#1E1E1E"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
+    <Grid>
+        <!-- Vista 1: Gestor de Conexiones (se muestra cuando está desconectado) -->
+        <views:ConnectionManagerView DataContext="{Binding ConnectionManager}">
+            <views:ConnectionManagerView.Style>
+                <Style TargetType="UserControl">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding DataContext.IsConnected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </views:ConnectionManagerView.Style>
+        </views:ConnectionManagerView>
+
+        <!-- Vista 2: Espacio de Trabajo Principal (se muestra cuando está conectado) -->
+        <Grid>
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            
+            <Grid.RowDefinitions>
+                <!-- Info de Conexión Activa y Botón Desconectar -->
+                <RowDefinition Height="Auto"/>
+                <!-- Espacio de exploración y consulta -->
+                <RowDefinition Height="*"/>
+                <!-- Barra de Estado inferior -->
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Barra Superior de Conexión Activa -->
+            <Border Grid.Row="0" Background="{StaticResource SidebarBackgroundBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Perfil Activo: " Style="{StaticResource ModernLabel}" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding ActiveConnectionName}" Foreground="{StaticResource AccentLightBrush}" VerticalAlignment="Center" Margin="0,0,20,0" FontWeight="Bold" FontSize="14"/>
+                        <TextBlock Text="Servidor: " Style="{StaticResource ModernLabel}" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding ActiveServerInfo}" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" Content="Desconectar" Command="{Binding DisconnectCommand}" Style="{StaticResource ModernButton}" Width="110" Height="32"/>
+                </Grid>
+            </Border>
+
+            <!-- Workspace Principal -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <!-- Explorador lateral -->
+                    <ColumnDefinition Width="280" MinWidth="200" MaxWidth="500"/>
+                    <!-- Splitter -->
+                    <ColumnDefinition Width="4"/>
+                    <!-- Panel central -->
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Explorador de Objetos / Consultas Guardadas (Sidebar) -->
+                <TabControl Grid.Column="0" Style="{StaticResource ModernTabControl}" Background="{StaticResource SidebarBackgroundBrush}">
+                    <!-- Pestaña 1: Esquema -->
+                    <TabItem Header="🗄️ Esquema" Style="{StaticResource ModernTabItem}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Filtros de Base de Datos y Tabla -->
+                            <Border Grid.Row="0" Padding="12,10" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                                <StackPanel>
+                                    <!-- ComboBox de Selección de Base de Datos -->
+                                    <Grid Margin="0,5,0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Base de Datos" Style="{StaticResource ModernLabel}" Margin="0" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" 
+                                                Content="⟳" 
+                                                Command="{Binding RefreshSchemaCommand}" 
+                                                Style="{StaticResource ModernButton}" 
+                                                Width="22" 
+                                                Height="22" 
+                                                Padding="0" 
+                                                FontSize="12" 
+                                                FontWeight="Bold"
+                                                VerticalAlignment="Center"
+                                                ToolTip="Refrescar base de datos y tablas (esquema)"/>
+                                    </Grid>
+                                    <ComboBox ItemsSource="{Binding DatabasesView}"
+                                              SelectedItem="{Binding SelectedDatabase}"
+                                              Text="{Binding DatabaseSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEditable="True"
+                                              IsReadOnly="False"
+                                              Style="{StaticResource ModernComboBox}"
+                                              Height="32"
+                                              Margin="0,0,0,10"/>
+                                    
+                                    <!-- TextBox de Filtrado de Tablas -->
+                                    <TextBlock Text="Filtrar Tablas" Style="{StaticResource ModernLabel}" Margin="0,0,0,3"/>
+                                    <TextBox Text="{Binding TableSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ModernTextBox}"
+                                             Padding="8,6"
+                                             Height="32"
+                                             Margin="0,0,0,10"/>
+                                    
+                                    <!-- Contador de Entidades -->
+                                    <TextBlock Text="{Binding TablesCountInfo}" 
+                                               Foreground="{StaticResource TextMutedBrush}" 
+                                               FontFamily="{StaticResource MainFont}"
+                                               FontSize="11" 
+                                               FontWeight="Bold"
+                                               Margin="2,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- TreeView de Tablas del Contexto Activo -->
+                            <TreeView x:Name="schemaTreeView" Grid.Row="1" ItemsSource="{Binding TablesView}" Style="{StaticResource ModernTreeView}">
+                                <TreeView.InputBindings>
+                                    <KeyBinding Key="C" Modifiers="Control" 
+                                                Command="{Binding CopyTableNameCommand}" 
+                                                CommandParameter="{Binding SelectedItem, ElementName=schemaTreeView}"/>
+                                </TreeView.InputBindings>
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                        <Setter Property="Padding" Value="6,4" />
+                                        <Style.Resources>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#252526"/>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#E5E5E5"/>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#1F1F1F"/>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#E5E5E5"/>
+                                        </Style.Resources>
+                                    </Style>
+                                </TreeView.ItemContainerStyle>
+                                <TreeView.Resources>
+                                    <!-- Context Menu for Tables -->
+                                    <ContextMenu x:Key="TableContextMenu" Style="{StaticResource ModernContextMenu}">
+                                        <MenuItem Header="Ver datos" 
+                                                  Command="{Binding PlacementTarget.Tag.ViewDataCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                        <MenuItem Header="Ver estructura" 
+                                                  Command="{Binding PlacementTarget.Tag.ViewStructureCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                        <MenuItem Header="Copiar nombre" 
+                                                  Command="{Binding PlacementTarget.Tag.CopyTableNameCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                        <MenuItem Header="Mostrar SQL" 
+                                                  Command="{Binding PlacementTarget.Tag.ShowCreateSqlCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                        <Separator Style="{StaticResource ModernMenuSeparator}" />
+                                        <MenuItem Header="Truncar (Truncate)" 
+                                                  Command="{Binding PlacementTarget.Tag.TruncateTableCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                        <MenuItem Header="Eliminar (Drop)" 
+                                                  Command="{Binding PlacementTarget.Tag.DropTableCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                  Style="{StaticResource ModernMenuItem}" />
+                                    </ContextMenu>
+
+                                    <HierarchicalDataTemplate DataType="{x:Type vm:DatabaseTreeItem}" ItemsSource="{Binding Items}">
+                                        <StackPanel x:Name="ItemPanel" Orientation="Horizontal" Background="Transparent" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}">
+                                            <TextBlock x:Name="IconText" Text="📁" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="14"/>
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="13"/>
+                                        </StackPanel>
+                                        <HierarchicalDataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="Database">
+                                                <Setter TargetName="IconText" Property="Text" Value="🗄️" />
+                                                <Setter TargetName="IconText" Property="Foreground" Value="#0078D4" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="Table">
+                                                <Setter TargetName="IconText" Property="Text" Value="📊" />
+                                                <Setter TargetName="IconText" Property="Foreground" Value="#2ECC71" />
+                                                <Setter TargetName="ItemPanel" Property="ContextMenu" Value="{StaticResource TableContextMenu}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="Column">
+                                                <Setter TargetName="IconText" Property="Text" Value="📝" />
+                                                <Setter TargetName="IconText" Property="Foreground" Value="#9B5DE5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="Error">
+                                                <Setter TargetName="IconText" Property="Text" Value="⚠️" />
+                                                <Setter TargetName="IconText" Property="Foreground" Value="#E74C3C" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="Dummy">
+                                                <Setter TargetName="IconText" Property="Text" Value="⏳" />
+                                                <Setter TargetName="IconText" Property="Foreground" Value="#8A8A8A" />
+                                            </DataTrigger>
+                                        </HierarchicalDataTemplate.Triggers>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.Resources>
+                            </TreeView>
+                        </Grid>
+                    </TabItem>
+                    
+                    <!-- Pestaña 2: Consultas Guardadas -->
+                    <TabItem Header="💾 Consultas" Style="{StaticResource ModernTabItem}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                                <TextBlock Text="Consultas Guardadas" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                            </Border>
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding SavedQueries}"
+                                     SelectedItem="{Binding SelectedSavedQuery}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="{StaticResource TextBrush}"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="10,8"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                                        <Border.InputBindings>
+                                                            <MouseBinding MouseAction="LeftDoubleClick" 
+                                                                          Command="{Binding DataContext.OpenSavedQueryCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                          CommandParameter="{Binding}"/>
+                                                        </Border.InputBindings>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <TextBlock Text="📄" Margin="0,0,8,0" FontSize="14" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="{Binding}" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#1E1E1E"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="border" Property="Background" Value="#2D2D30"/>
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <!-- Context menu for deletion -->
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu Style="{StaticResource ModernContextMenu}">
+                                                    <MenuItem Header="Abrir Consulta"
+                                                              Command="{Binding PlacementTarget.DataContext.OpenSavedQueryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              Style="{StaticResource ModernMenuItem}"/>
+                                                    <MenuItem Header="Eliminar"
+                                                              Command="{Binding PlacementTarget.DataContext.DeleteSavedQueryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              Style="{StaticResource ModernMenuItem}"/>
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+
+                <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrush}"/>
+
+                <!-- TabControl Area -->
+                <TabControl Grid.Column="2" SelectedIndex="{Binding SelectedTabIndex}" Style="{StaticResource ModernTabControl}">
+                    <!-- Tab 1: Editor SQL -->
+                    <TabItem Header="Editor SQL" Style="{StaticResource ModernTabItem}">
+                        <views:SqlEditorView DataContext="{Binding SqlEditor}"/>
+                    </TabItem>
+
+                    <!-- Tab 2: Info de Sistema -->
+                    <TabItem Header="Información de Sistema" Style="{StaticResource ModernTabItem}">
+                        <ScrollViewer Background="{StaticResource ContentBackgroundBrush}" Padding="30">
+                            <StackPanel MaxWidth="600" HorizontalAlignment="Left">
+                                <TextBlock Text="Detalles del Plugin de Base de Datos" Style="{StaticResource ModernHeader}" FontSize="20"/>
+                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Proveedor Activo:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding ProviderName}" Foreground="{StaticResource TextBrush}" FontWeight="Bold"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Clase Implementadora:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="DbClient.Plugins.MySql.MySqlPlugin" Foreground="{StaticResource AccentLightBrush}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Paquete NuGet Utilizado:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="MySqlConnector" Foreground="{StaticResource TextBrush}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,24">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Modo de Inyección:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="Registrado como Singleton a través de IDatabasePlugin" Foreground="{StaticResource TextBrush}"/>
+                                </Grid>
+
+                                <TextBlock Text="Arquitectura del Proyecto" Style="{StaticResource ModernHeader}" Margin="0,20,0,8"/>
+                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+                                <TextBlock Text="Para cumplir con las reglas del proyecto, el núcleo de la aplicación (WPF) solo se comunica con la interfaz abstracta IDatabasePlugin definida en el proyecto DbClient.Core. No existe dependencia ni compilación rígida con el motor MySqlConnector en el core del cliente, lo que permite agregar soporte a otras bases de datos en el futuro simplemente implementando la interfaz en un nuevo ensamblado." 
+                                           TextWrapping="Wrap" LineHeight="20" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 3: Estructura de Tabla -->
+                    <TabItem Header="Estructura de Tabla">
+                        <TabItem.Style>
+                            <Style TargetType="TabItem" BasedOn="{StaticResource ModernTabItem}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsStructureEditorActive}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TabItem.Style>
+                        <Border Background="{StaticResource ContentBackgroundBrush}" Padding="20">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                <!-- Header info -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Toolbar -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Main Grid -->
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header Section -->
+                            <Grid Grid.Row="0" Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Diseño de Estructura de Tabla" Style="{StaticResource ModernHeader}" FontSize="20" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="Tabla: " Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding ActiveTableStructureName}" Foreground="{StaticResource AccentLightBrush}" FontWeight="Bold" FontSize="14"/>
+                                    </StackPanel>
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Descripción / Comentario:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBox Grid.Column="1" Text="{Binding ActiveTableComment, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Padding="8,6" VerticalAlignment="Center" MaxWidth="600" HorizontalAlignment="Left" Width="400"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Toolbar Section -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+                                <Button Content="💾 Guardar Cambios" Command="{Binding SaveStructureCommand}" Style="{StaticResource ModernButton}" BorderBrush="{StaticResource SuccessBrush}" Foreground="{StaticResource SuccessBrush}" Margin="0,0,10,0" Padding="12,6"/>
+                                <Button Content="❌ Cancelar / Cerrar" Command="{Binding CloseStructureCommand}" Style="{StaticResource ModernButton}" Padding="12,6"/>
+                            </StackPanel>
+
+                            <!-- TabControl for Structure Sub-sections -->
+                            <TabControl Grid.Row="2" Style="{StaticResource ModernTabControl}" Background="Transparent">
+                                <!-- Pestaña 1: Columnas -->
+                                <TabItem Header="📋 Columnas" Style="{StaticResource ModernTabItem}">
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Content="➕ Agregar Columna" Command="{Binding AddColumnCommand}" Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Margin="0,0,0,10" Padding="12,6"/>
+                                        <DataGrid Grid.Row="1" 
+                                                  ItemsSource="{Binding ColumnsStructureList}"
+                                                  Style="{StaticResource ModernDataGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  CanUserDeleteRows="False"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  BorderThickness="1"
+                                                  BorderBrush="{StaticResource BorderBrush}">
+                                            <DataGrid.Columns>
+                                                <!-- Field/Column Name -->
+                                                <DataGridTemplateColumn Header="Nombre de Columna" Width="*">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Field, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="10,6"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                                        <DataTemplate>
+                                                            <TextBox Text="{Binding Field, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="4,2" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <!-- Data Type -->
+                                                <DataGridTemplateColumn Header="Tipo de Datos" Width="180">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="10,6"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                                        <DataTemplate>
+                                                            <TextBox Text="{Binding Type, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="4,2" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <!-- Nullable -->
+                                                <DataGridTemplateColumn Header="Permitir Nulo" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsNullable, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <!-- Primary Key (Read Only) -->
+                                                <DataGridTemplateColumn Header="Clave Primaria" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsPrimaryKey, Mode=OneWay}" IsEnabled="False" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <!-- Default Value -->
+                                                <DataGridTemplateColumn Header="Predeterminado" Width="140">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding DefaultVal, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="10,6"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                    <DataGridTemplateColumn.CellEditingTemplate>
+                                                        <DataTemplate>
+                                                            <TextBox Text="{Binding DefaultVal, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" Margin="4,2" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellEditingTemplate>
+                                                </DataGridTemplateColumn>
+
+                                                <!-- Extra (Read Only) -->
+                                                <DataGridTextColumn Header="Extra" Binding="{Binding Extra, Mode=OneWay}" IsReadOnly="True" Width="140">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+
+                                                <!-- Actions: Delete column -->
+                                                <DataGridTemplateColumn Header="Acciones" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Eliminar" 
+                                                                    Command="{Binding DataContext.DeleteColumnCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                                    CommandParameter="{Binding}" 
+                                                                    Style="{StaticResource DangerButton}" 
+                                                                    Padding="10,4" 
+                                                                    FontSize="11"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </TabItem>
+
+                                <!-- Pestaña 2: Índices -->
+                                <TabItem Header="🔑 Índices" Style="{StaticResource ModernTabItem}">
+                                    <Grid Margin="0,10,0,0">
+                                        <DataGrid ItemsSource="{Binding IndexesList}"
+                                                  Style="{StaticResource ModernDataGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  CanUserDeleteRows="False"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  BorderThickness="1"
+                                                  BorderBrush="{StaticResource BorderBrush}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Nombre del Índice" Binding="{Binding Name}" Width="*" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Columnas" Binding="{Binding Columns}" Width="*" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTemplateColumn Header="Único" Width="100">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsUnique, Mode=OneWay}" IsEnabled="False" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                                <DataGridTextColumn Header="Tipo" Binding="{Binding Type}" Width="120" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTemplateColumn Header="Acciones" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Eliminar" 
+                                                                    Command="{Binding DataContext.DeleteIndexCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                                    CommandParameter="{Binding}" 
+                                                                    Style="{StaticResource DangerButton}" 
+                                                                    Padding="10,4" 
+                                                                    FontSize="11"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </TabItem>
+
+                                <!-- Pestaña 3: Llaves Foráneas -->
+                                <TabItem Header="🔗 Llaves Foráneas" Style="{StaticResource ModernTabItem}">
+                                    <Grid Margin="0,10,0,0">
+                                        <DataGrid ItemsSource="{Binding ForeignKeysList}"
+                                                  Style="{StaticResource ModernDataGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  CanUserDeleteRows="False"
+                                                  HeadersVisibility="Column"
+                                                  GridLinesVisibility="Horizontal"
+                                                  BorderThickness="1"
+                                                  BorderBrush="{StaticResource BorderBrush}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Nombre de Restricción" Binding="{Binding Name}" Width="*" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Columnas" Binding="{Binding Columns}" Width="150" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Tabla Referenciada" Binding="{Binding ReferencedTable}" Width="150" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Columnas Referenciadas" Binding="{Binding ReferencedColumns}" Width="150" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Al Actualizar" Binding="{Binding OnUpdate}" Width="120" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Al Eliminar" Binding="{Binding OnDelete}" Width="120" IsReadOnly="True">
+                                                    <DataGridTextColumn.ElementStyle>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Margin" Value="10,6"/>
+                                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                                        </Style>
+                                                    </DataGridTextColumn.ElementStyle>
+                                                </DataGridTextColumn>
+                                                <DataGridTemplateColumn Header="Acciones" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Eliminar" 
+                                                                    Command="{Binding DataContext.DeleteForeignKeyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
+                                                                    CommandParameter="{Binding}" 
+                                                                    Style="{StaticResource DangerButton}" 
+                                                                    Padding="10,4" 
+                                                                    FontSize="11"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
+                            </Grid>
+                        </Border>
+                    </TabItem>
+
+                    <!-- Tab 4: Datos de Tabla -->
+                    <TabItem Header="Datos de Tabla">
+                        <TabItem.Style>
+                            <Style TargetType="TabItem" BasedOn="{StaticResource ModernTabItem}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTableDataActive}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TabItem.Style>
+                        <TabControl Name="tableDataTabControl"
+                                    ItemsSource="{Binding TableDataTabs}"
+                                    SelectedItem="{Binding SelectedTableDataTab}"
+                                    Style="{StaticResource TabStripWithContentStyle}"
+                                    ItemContainerStyle="{StaticResource TableDataTabItemStyle}"
+                                    PreviewMouseLeftButtonDown="TableDataTabControl_PreviewMouseLeftButtonDown"
+                                    PreviewMouseMove="TableDataTabControl_PreviewMouseMove"
+                                    Drop="TableDataTabControl_Drop"
+                                    AllowDrop="True"
+                                    BorderThickness="0">
+                            <TabControl.Resources>
+                                <DataTemplate DataType="{x:Type vm:TableDataViewModel}">
+                                    <views:TableDataView />
+                                </DataTemplate>
+                            </TabControl.Resources>
+                        </TabControl>
+                    </TabItem>
+
+                    <!-- Tab 5: Diagrama ER -->
+                    <TabItem Header="🗺️ Diagrama ER" Style="{StaticResource ModernTabItem}">
+                        <views:ErDiagramView DataContext="{Binding ErDiagram}"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+
+            <!-- Bottom Status Bar -->
+            <Border Grid.Row="2" Background="{StaticResource AccentBrush}" Padding="10,5">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+            </Border>
+        </Grid>
+
+        <!-- Dialogo/Paleta de Búsqueda Rápida (Estilo VS Code Ctrl+P) -->
+        <Grid Background="#99000000" Focusable="True" Name="quickSearchOverlay" IsVisibleChanged="QuickSearchOverlay_IsVisibleChanged">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsQuickSearchOpen}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <!-- Background clicking closes search -->
+            <Grid.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding CloseQuickSearchCommand}"/>
+            </Grid.InputBindings>
+
+            <!-- Card centrada en la parte superior -->
+            <Border Background="#252526" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Width="550" MaxHeight="380" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,50,0,0" Padding="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="15" ShadowDepth="4" Direction="270" Color="Black" Opacity="0.5"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Input de búsqueda -->
+                    <TextBox x:Name="quickSearchTextBox" Grid.Row="0"
+                             Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewKeyDown="QuickSearchTextBox_PreviewKeyDown"
+                             Background="#1E1E1E"
+                             Foreground="White"
+                             BorderBrush="{StaticResource BorderBrush}"
+                             BorderThickness="1"
+                             Padding="8,6"
+                             FontSize="14"
+                             FontFamily="Consolas, Courier New, monospace"
+                             Height="36"/>
+
+                    <!-- Lista de resultados -->
+                    <ListBox x:Name="quickSearchListBox" Grid.Row="1" Margin="0,8,0,0"
+                             ItemsSource="{Binding FilteredSearchItems}"
+                             SelectedItem="{Binding SelectedSearchItem, Mode=TwoWay}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             MaxHeight="300"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             MouseLeftButtonUp="QuickSearchListBox_MouseLeftButtonUp">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="10,6"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="border" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="3">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Name}" Foreground="White" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding DisplayType}" Foreground="{StaticResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#2A2D2F"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#007ACC"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
