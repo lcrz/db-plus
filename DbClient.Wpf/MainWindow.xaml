@@ -430,6 +430,31 @@
                                 <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
                                 <TextBlock Text="Para cumplir con las reglas del proyecto, el núcleo de la aplicación (WPF) solo se comunica con la interfaz abstracta IDatabasePlugin definida en el proyecto DbClient.Core. No existe dependencia ni compilación rígida con el motor MySqlConnector en el core del cliente, lo que permite agregar soporte a otras bases de datos en el futuro simplemente implementando la interfaz en un nuevo ensamblado." 
                                            TextWrapping="Wrap" LineHeight="20" Foreground="{StaticResource TextMutedBrush}"/>
+
+                                <TextBlock Text="Información del Autor" Style="{StaticResource ModernHeader}" Margin="0,20,0,8"/>
+                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Autor:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="Luis Alberto Cruz Orellana" Foreground="{StaticResource TextBrush}" FontWeight="Bold"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="GitHub:" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1">
+                                        <Hyperlink NavigateUri="https://github.com/lcrz" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{StaticResource AccentLightBrush}">
+                                            <Run Text="https://github.com/lcrz"/>
+                                        </Hyperlink>
+                                    </TextBlock>
+                                </Grid>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
