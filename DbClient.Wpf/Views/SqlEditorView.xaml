@@ -352,7 +352,20 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="300">
+                                        <ColumnDefinition.Style>
+                                            <Style TargetType="ColumnDefinition">
+                                                <Setter Property="MinWidth" Value="150"/>
+                                                <Setter Property="MaxWidth" Value="600"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsJsonPanelVisible}" Value="False">
+                                                        <Setter Property="MinWidth" Value="0"/>
+                                                        <Setter Property="MaxWidth" Value="0"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ColumnDefinition.Style>
+                                    </ColumnDefinition>
                                 </Grid.ColumnDefinitions>
 
                                 <DataGrid Grid.Column="0"
@@ -386,7 +399,7 @@
 
                                 <!-- Panel de Detalles JSON -->
                                 <Grid Grid.Column="2" 
-                                      Width="300"
+                                      HorizontalAlignment="Stretch"
                                       Background="#161616" 
                                       Margin="0"
                                       Visibility="{Binding IsJsonPanelVisible, Converter={StaticResource BoolToVis}}">

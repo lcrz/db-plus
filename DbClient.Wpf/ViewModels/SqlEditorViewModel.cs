@@ -134,7 +134,19 @@ namespace DbClient.Wpf.ViewModels
         private void ShowSaveQueryDialog()
         {
             if (SelectedTab == null) return;
-            NewQueryName = string.Empty;
+            
+            // Si el título empieza por "Consulta " (que es el nombre genérico predeterminado),
+            // sugerimos un campo vacío para obligar al usuario a elegir un nombre.
+            // De lo contrario, sugerimos el título actual de la pestaña.
+            if (SelectedTab.Title != null && SelectedTab.Title.StartsWith("Consulta "))
+            {
+                NewQueryName = string.Empty;
+            }
+            else
+            {
+                NewQueryName = SelectedTab.Title;
+            }
+            
             IsSaveQueryDialogOpen = true;
         }
 
@@ -148,7 +160,12 @@ namespace DbClient.Wpf.ViewModels
             if (SelectedTab == null || string.IsNullOrWhiteSpace(NewQueryName)) return;
             try
             {
-                _connectionStorageService.SaveQuery(NewQueryName.Trim(), SelectedTab.QueryText);
+                var cleanName = NewQueryName.Trim();
+                _connectionStorageService.SaveQuery(cleanName, SelectedTab.QueryText);
+                
+                // Actualizar el título de la pestaña actual al nombre bajo el cual se guardó la consulta
+                SelectedTab.Title = cleanName;
+                
                 IsSaveQueryDialogOpen = false;
                 QuerySaved?.Invoke();
             }
