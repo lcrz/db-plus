@@ -6,7 +6,7 @@ Este cliente de base de datos destaca por su arquitectura desacoplada basada en 
 
 ---
 
-## 🚀 Características Clave
+## Características Clave
 
 - **Arquitectura Basada en Plugins:** El núcleo de la aplicación no depende de ninguna biblioteca específica de bases de datos (como `MySqlConnector`). Todo motor de base de datos se comunica mediante la interfaz `IDatabasePlugin`.
 - **Interfaz Moderna y Oscura:** UI estilizada y optimizada para el flujo de trabajo de desarrolladores.
@@ -17,7 +17,7 @@ Este cliente de base de datos destaca por su arquitectura desacoplada basada en 
 
 ---
 
-## 🛠️ Arquitectura del Proyecto
+## Arquitectura del Proyecto
 
 El proyecto está dividido en tres capas principales:
 
@@ -27,14 +27,14 @@ El proyecto está dividido en tres capas principales:
 
 ---
 
-## ⚙️ Requisitos
+## Requisitos
 
 - **SDK de .NET 10.0** (o posterior)
 - **Windows OS** (Debido a la dependencia nativa de WPF)
 
 ---
 
-## 🚀 Ejecución y Despliegue
+## Ejecución y Despliegue
 
 ### Ejecutar la aplicación en desarrollo
 
@@ -57,7 +57,7 @@ dotnet publish DbClient.Wpf -c Release -r win-x64 --self-contained true -p:Publi
 
 ---
 
-## 🔌 Cómo Agregar un Nuevo Plugin de Base de Datos
+## Cómo Agregar un Nuevo Plugin de Base de Datos
 
 Para añadir soporte para otro motor de base de datos (por ejemplo, PostgreSQL o SQLite):
 
