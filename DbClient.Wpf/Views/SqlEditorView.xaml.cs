@@ -467,5 +467,20 @@ namespace DbClient.Wpf.Views
                 }
             }
         }
+
+        private void TreeView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.C && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+            {
+                if (sender is TreeView treeView && treeView.SelectedItem is ViewModels.JsonNodeViewModel selectedNode)
+                {
+                    if (treeView.DataContext is ViewModels.QueryResultViewModel vm)
+                    {
+                        vm.CopyJsonNodeToClipboard(selectedNode);
+                        e.Handled = true;
+                    }
+                }
+            }
+        }
     }
 }

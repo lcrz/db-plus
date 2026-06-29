@@ -1,0 +1,73 @@
+<Window x:Class="DbClient.Wpf.Views.DetachedResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:helpers="clr-namespace:DbClient.Wpf.Helpers"
+        mc:Ignorable="d"
+        Title="{Binding Title, StringFormat='{}Resultados - {0}'}" Height="450" Width="800"
+        Style="{StaticResource ModernWindow}"
+        Icon="/Resources/app_icon.png"
+        WindowStartupLocation="CenterScreen">
+    <Grid Background="{StaticResource ContentBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <Border Grid.Row="0" Background="#1E1E1E" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Resultados Desacoplados: " Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Title}" Foreground="{StaticResource AccentLightBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <DataGrid Grid.Row="1"
+                  helpers:DataGridExtensions.BindableSource="{Binding DataTable}"
+                  IsReadOnly="True"
+                  AutoGenerateColumns="True"
+                  BorderThickness="0">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Copiar como SQL" 
+                              Command="{Binding CopyAsSqlCommand}" 
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="Copiar como Json" 
+                              Command="{Binding CopyAsJsonCommand}" 
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                    <MenuItem Header="Copiar como CSV" 
+                              Command="{Binding CopyAsCsvCommand}" 
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Style>
+                <Style TargetType="DataGrid" BasedOn="{StaticResource ModernDataGrid}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsTable}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.Style>
+        </DataGrid>
+
+        <!-- Message for non-table results (like UPDATE/INSERT) -->
+        <Border Grid.Row="1" Padding="20">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsTable}" Value="False">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                <TextBlock Text="✔️" FontSize="16" Margin="0,0,10,0" Foreground="{StaticResource SuccessBrush}"/>
+                <TextBlock Text="{Binding Message}" FontSize="14" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
