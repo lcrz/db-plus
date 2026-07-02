@@ -349,6 +349,10 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Grid.Style>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -368,7 +372,7 @@
                                     </ColumnDefinition>
                                 </Grid.ColumnDefinitions>
 
-                                <DataGrid Grid.Column="0"
+                                <DataGrid Grid.Row="0" Grid.Column="0"
                                           helpers:DataGridExtensions.BindableSource="{Binding DataTable}"
                                           SelectedItem="{Binding SelectedRow}"
                                           Style="{StaticResource ModernDataGrid}"
@@ -390,7 +394,7 @@
                                 </DataGrid>
 
                                 <!-- Separador para el panel JSON -->
-                                <GridSplitter Grid.Column="1" 
+                                <GridSplitter Grid.Row="0" Grid.Column="1" 
                                               Width="4" 
                                               HorizontalAlignment="Stretch" 
                                               VerticalAlignment="Stretch" 
@@ -398,7 +402,7 @@
                                               Visibility="{Binding IsJsonPanelVisible, Converter={StaticResource BoolToVis}}"/>
 
                                 <!-- Panel de Detalles JSON -->
-                                <Grid Grid.Column="2" 
+                                <Grid Grid.Row="0" Grid.Column="2" 
                                       HorizontalAlignment="Stretch"
                                       Background="#161616" 
                                       Margin="0"
@@ -498,6 +502,40 @@
                                         </TreeView.Resources>
                                     </TreeView>
                                 </Grid>
+
+                                <!-- Barra de estado individual de la consulta -->
+                                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Background="#1E1E1E" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="12,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Grid.Column="0" 
+                                                   Text="Listo." 
+                                                   Foreground="{StaticResource TextMutedBrush}" 
+                                                   VerticalAlignment="Center" 
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"/>
+                                        
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding ExecutionTimeMessage}" 
+                                                       Foreground="{StaticResource SuccessBrush}" 
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text=" | " 
+                                                       Foreground="{StaticResource SuccessBrush}" 
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Visibility="{Binding IsTable, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="{Binding RowCountMessage}" 
+                                                       Foreground="{StaticResource SuccessBrush}" 
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Visibility="{Binding IsTable, Converter={StaticResource BoolToVis}}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
                             </Grid>
 
                             <!-- Si es un mensaje de filas afectadas, lo mostramos bonito -->
@@ -541,6 +579,16 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
+
+            <!-- Loading Overlay -->
+            <Grid Grid.Row="0" Grid.RowSpan="2" Background="#C0101010" Visibility="{Binding SelectedTab.IsBusy, Converter={StaticResource BoolToVis}}">
+                <Border CornerRadius="8" Background="#252526" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="25" Width="320" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Height="6" Width="200" Foreground="{StaticResource AccentBrush}" Background="#1E1E1E" BorderThickness="0" Margin="0,0,0,15"/>
+                        <TextBlock Text="{Binding SelectedTab.StatusMessage}" Foreground="White" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
 
         <!-- Dialogo Modal para Guardar Consulta -->

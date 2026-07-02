@@ -135,7 +135,8 @@ namespace DbClient.Wpf.ViewModels
                     {
                         Title = title,
                         DataTable = r.DataTable,
-                        Message = r.Message
+                        Message = r.Message,
+                        ExecutionTimeMessage = $"Ejecutado en {stopwatch.Elapsed.TotalMilliseconds:N2} ms."
                     });
                 }
 

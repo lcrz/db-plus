@@ -86,6 +86,15 @@ namespace DbClient.Wpf.ViewModels
             set => SetProperty(ref _isJsonPanelVisible, value);
         }
 
+        private string _executionTimeMessage;
+        public string ExecutionTimeMessage
+        {
+            get => _executionTimeMessage;
+            set => SetProperty(ref _executionTimeMessage, value);
+        }
+
+        public string RowCountMessage => DataTable != null ? $"Registros: {DataTable.Rows.Count}" : string.Empty;
+
         public ObservableCollection<JsonNodeViewModel> JsonNodes { get; } = new();
 
         public System.Windows.Input.ICommand DetachCommand { get; }

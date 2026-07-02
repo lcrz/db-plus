@@ -434,11 +434,13 @@ namespace DbClient.Wpf.ViewModels
             IsBusy = true;
             StatusMessage = "Cargando datos...";
             QueryResults = null;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             try
             {
                 var sql = BuildSelectQuery();
                 var dt = await _databasePlugin.ExecuteQueryAsync(sql);
+                stopwatch.Stop();
                 if (dt != null)
                 {
                     dt.Constraints.Clear();
@@ -450,10 +452,11 @@ namespace DbClient.Wpf.ViewModels
                     }
                 }
                 QueryResults = dt;
-                StatusMessage = $"Listo. Se cargaron {(dt?.Rows.Count ?? 0)} registros.";
+                StatusMessage = $"Listo. Se cargaron {(dt?.Rows.Count ?? 0)} registros en {stopwatch.Elapsed.TotalMilliseconds:N2} ms.";
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
                 StatusMessage = $"Error al cargar datos: {ex.Message}";
                 System.Windows.MessageBox.Show($"Error al cargar datos: {ex.Message}", "Error de Consulta", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }

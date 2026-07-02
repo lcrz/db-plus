@@ -7,6 +7,10 @@
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000">
     
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    
     <Grid Background="{StaticResource ContentBackgroundBrush}">
         <Grid.RowDefinitions>
             <!-- Panel de Filtros -->
@@ -347,5 +351,15 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.Row="0" Grid.RowSpan="4" Background="#C0101010" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <Border CornerRadius="8" Background="#252526" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="25" Width="320" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True" Height="6" Width="200" Foreground="{StaticResource AccentBrush}" Background="#1E1E1E" BorderThickness="0" Margin="0,0,0,15"/>
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
